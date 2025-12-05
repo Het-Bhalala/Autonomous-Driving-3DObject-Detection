@@ -1,0 +1,6 @@
+name,success,seconds,error
+kitti_pointpillars_000123,True,124.26614059999702,
+kitti_3dssd_000123,True,14.348299200006295,
+kitti_second_000123,True,12.231783499999437,
+nuscenes_pointpillars_demo,True,12.714953399990918,
+nuscenes_centerpoint_demo,True,25.39783790000365,

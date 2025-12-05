@@ -1,6 +1,6 @@
 ## 3D Object Detection on KITTI & nuScenes using MMDetection3D
 
-This repository contains my full implementation of HW2. I performed 3D object detection on **two datasets (KITTI + nuScenes)** using **multiple models**, saved visualizations (`.png`, `.ply`, `.json`), generated Open3D screenshots, and produced a combined demo video.  
+I performed 3D object detection on **two datasets (KITTI + nuScenes)** using **multiple models**, saved visualizations (`.png`, `.ply`, `.json`), generated Open3D screenshots, and produced a combined demo video.  
 All experiments were executed on my local machine using MMDetection3D with custom modifications.
 
 ---
@@ -8,7 +8,7 @@ All experiments were executed on my local machine using MMDetection3D with custo
 # 1. Environment Setup
 
 ### System
-- **OS:** Windows 10  
+- **OS:** Windows 11  
 - **GPU:** NVIDIA GeForce MX350  
 - **Python:** 3.10  
 - **CUDA:** 11.8 (via PyTorch wheels)
@@ -68,16 +68,11 @@ The datasets are stored locally and excluded from GitHub.
 ```
 data/kitti/training/
     velodyne/
-        000008.bin
         000123.bin
     image_2/
-        000008.png
         000123.png
     calib/
-        000008.txt
-        000123.txt   # reused 000008 calibration for consistent projection
-    label_2/
-        000008.txt   # optional GT
+        000123.txt  
 ```
 
 ## 3.2 nuScenes demo sample
@@ -89,8 +84,6 @@ data/nuscenes_demo/
     images/
         CAM_FRONT, CAM_BACK, etc.
 ```
-
----
 
 # 4. Main Inference Script
 
@@ -115,90 +108,7 @@ Additions include:
 
 Modifications are clearly marked with comments such as:
 
-```python
-# ---- HW2 Custom Preset ----
-```
-
----
-
-# 5. Inference Commands Used
-
-## 5.1 KITTI – PointPillars (frame: 000123)
-
-```bash
-python mmdet3d_inference2.py ^
-  --dataset kitti ^
-  --input-path data/kitti/training ^
-  --frame-number 000123 ^
-  --model pointpillars_hv_secfpn_8xb6-160e_kitti-3d-car ^
-  --checkpoint checkpoints/kitti_pointpillars/hv_pointpillars_secfpn_6x8_160e_kitti-3d-car_20220331_134606-d42d15ed.pth ^
-  --out-dir outputs/kitti_pointpillars ^
-  --device cuda:0 ^
-  --headless ^
-  --score-thr 0.3
-```
-
-## 5.2 KITTI – 3DSSD
-
-```bash
-python mmdet3d_inference2.py ^
-  --dataset kitti ^
-  --input-path data/kitti/training ^
-  --frame-number 000123 ^
-  --model 3dssd_4x4_kitti-3d-car ^
-  --checkpoint checkpoints/3dssd/3dssd_4x4_kitti-3d-car_20210818_203828-b89c8fc4.pth ^
-  --out-dir outputs/kitti_3dssd ^
-  --device cuda:0 ^
-  --headless ^
-  --score-thr 0.6
-```
-
-## 5.3 KITTI – SECOND (weaker baseline)
-
-```bash
-python mmdet3d_inference2.py ^
-  --dataset kitti ^
-  --input-path data/kitti/training ^
-  --frame-number 000123 ^
-  --model second_hv_secfpn_8xb6-80e_kitti-3d-3class ^
-  --checkpoint checkpoints/kitti_second/second_hv_secfpn_8xb6-80e_kitti-3d-3class-b086d0a3.pth ^
-  --out-dir outputs/kitti_second ^
-  --device cuda:0 ^
-  --headless ^
-  --score-thr 0.05
-```
-
-## 5.4 nuScenes – PointPillars
-
-```bash
-python mmdet3d_inference2.py ^
-  --dataset any ^
-  --input-path data/nuscenes_demo/lidar/n015-2018-07-24-11-22-45+0800__LIDAR_TOP__1532402927647951.pcd.bin ^
-  --model pointpillars_hv_fpn_sbn-all_8xb4-2x_nus-3d ^
-  --checkpoint checkpoints/nuscenes_pointpillars/hv_pointpillars_fpn_sbn-all_4x8_2x_nus-3d_20210826_104936-fca299c1.pth ^
-  --out-dir outputs/nuscenes_pointpillars ^
-  --device cuda:0 ^
-  --headless ^
-  --score-thr 0.2
-```
-
-## 5.5 nuScenes – CenterPoint
-
-```bash
-python mmdet3d_inference2.py ^
-  --dataset any ^
-  --input-path data/nuscenes_demo/lidar/n015-2018-07-24-11-22-45+0800__LIDAR_TOP__1532402927647951.pcd.bin ^
-  --model centerpoint_voxel01_second_secfpn_head-circlenms_8xb4-cyclic-20e_nus-3d ^
-  --checkpoint checkpoints/nuscenes_centerpoint/centerpoint_01voxel_second_secfpn_circlenms_4x8_cyclic-20e_nus-3d_20220810_030004-9061688e.pth ^
-  --out-dir outputs/nuscenes_centerpoint ^
-  --device cuda:0 ^
-  --headless ^
-  --score-thr 0.25
-```
-
----
-
-# 6. Automation Script
+# 5. Automation Script
 
 I created a helper:
 
@@ -218,15 +128,59 @@ executes all five experiments and logs timing information to:
 results/experiment_timings.csv
 ```
 
-### Final runtimes:
+# 6. Comparison & Analysis
 
-| Experiment              | Runtime (sec) |
-| ----------------------- | ------------- |
-| KITTI – PointPillars    | **124.27**    |
-| KITTI – 3DSSD           | **14.35**     |
-| KITTI – SECOND          | **12.23**     |
-| nuScenes – PointPillars | **12.71**     |
-| nuScenes – CenterPoint  | **25.40**     |
+To compare performance across datasets and models, I evaluated five detectors on two datasets (KITTI and nuScenes).  
+Metrics extracted automatically using `run_all_experiments.py` and `compare_results_to_csv.py` include:
+
+- **Latency** (seconds per frame)  
+- **FPS** (1 / latency)  
+- **Number of detections**  
+- **Average score** (mean confidence of predicted bounding boxes)  
+
+These metrics provide a realistic picture of computational cost and detection behavior without needing full mAP evaluation.
+
+### 6.1 Quantitative Model Comparison
+
+| Dataset   | Model         | Latency (s) | FPS     | # Detections | Avg Score |
+|-----------|---------------|-------------|---------|--------------|-----------|
+| KITTI     | PointPillars  | **124.27**  | 0.0080  | 10           | 0.6074    |
+| KITTI     | 3DSSD         | **14.35**   | 0.0697  | 100          | 0.0536    |
+| KITTI     | SECOND        | **12.23**   | 0.0817  | 0            | –         |
+| nuScenes  | PointPillars  | **12.71**   | 0.0786  | 365          | 0.1266    |
+| nuScenes  | CenterPoint   | **25.40**   | 0.0393  | 264          | 0.2443    |
+
+### 6.2 Key Observations
+
+1. **3DSSD is dramatically faster than KITTI PointPillars**, running almost **9× faster** while producing many more detections.  
+   - It achieves the best speed–accuracy balance for KITTI on a low-power GPU like the MX350.
+
+2. **PointPillars excels in confidence but not speed (KITTI)**.  
+   - Although slow (124s per frame), it gives the **highest average detection score (0.6074)**, indicating stable detections but heavy computation.
+
+3. **SECOND produces no valid detections** on the chosen frame.  
+   - This result aligns with earlier warnings about **weight–architecture mismatches** in mmdet3d 1.4.0.  
+   - SECOND is included as a *negative example* of model compatibility issues.
+
+4. **CenterPoint outperforms PointPillars on nuScenes in quality**, despite being slower.  
+   - PointPillars: 365 detections, avg score 0.1266  
+   - CenterPoint: 264 detections, avg score 0.2443  
+   - Fewer detections but **much higher-quality predictions**.
+
+5. **nuScenes produces far more detections than KITTI**, due to:  
+   - 360° LiDAR coverage  
+   - Dense urban scenes  
+   - Multi-class prediction  
+   - Better model–dataset alignment (CenterPoint is designed for nuScenes)
+
+### 6.3 Conclusion of Analysis
+
+- **Best KITTI model:** 3DSSD (speed + high detection count)  
+- **Best nuScenes model:** CenterPoint (high-confidence detections)  
+- **Most consistent cross-dataset model:** PointPillars  
+- **Poor performance:** SECOND (compatibility issue, zero detections)  
+
+Latency, FPS, and detection density clearly show how model architecture interacts with dataset characteristics, especially under GPU limitations.
 
 ---
 
@@ -238,15 +192,6 @@ To render and save `.png` screenshots reliably on Windows, I used:
 scripts/open3d_save_view.py
 ```
 
-Example:
-
-```bash
-python scripts/open3d_save_view.py ^
-  --dir outputs/nuscenes_pointpillars ^
-  --basename n015-2018-07-24-11-22-45+0800__LIDAR_TOP__1532402927647951.pcd ^
-  --width 1600 --height 1200 ^
-  --save-path results/screenshots/nuscenes_pointpillars_open3d.png
-```
 
 Screenshots used in the report:
 
@@ -319,12 +264,9 @@ Datasets and `.venv/` are excluded.
 
 # 10. Notes & Limitations
 
-* For KITTI frame `000123`, calibration was adapted from `000008` to enable 2D projection.
 * SECOND’s pretrained checkpoint produced shape mismatch warnings, yielding weaker detections.
 * Runtime varies substantially due to GPU limitations (MX350).
 * Qualitative comparison focuses on *relative* model behavior across identical frames.
 
 ---
 
-If you want, I can now also create a **final 1–2 page report.md** to fully complete your submission.
-```
